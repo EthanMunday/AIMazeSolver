@@ -23,5 +23,6 @@ public class AIMovementController
     {
         movementVector = Vector2.zero;
         pawn = _pawn;
+        movementSpeed = _movementSpeed;
     }
 }

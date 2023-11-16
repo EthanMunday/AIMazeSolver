@@ -4,8 +4,7 @@ using UnityEngine;
 
 public class GridSlot
 {
-    public bool[] wallData;
-    public GameObject[] wallObjects;
+    public bool wallData;
 
     public bool AddWall(int direction)
     {
@@ -44,7 +43,7 @@ public class GridSlot
 
     public GridSlot()
     {
-        wallData = new bool[2];
+        wallData = new bool[3];
         wallObjects = new GameObject[3];
     }
 }

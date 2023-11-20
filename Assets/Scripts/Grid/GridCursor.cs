@@ -216,11 +216,16 @@ public class GridCursor : MonoBehaviour
 
     private void RoomDetection()
     {
+        // Destroys all Room objects
         foreach (GameObject room in roomObjList) Destroy(room);
 
+        // Makes lists for areas to search and list of finalised rooms
         List<Vector2Int> searchedList = new List<Vector2Int>();
         List<List<Vector2Int>> roomArray = new List<List<Vector2Int>>();
 
+        // Populates the areas to search with tiles without any walls
+        // The aditional check here won't be necissary since we're using edge based walls
+        // Starts from -1 of the min and +1 of the max so an outer layer of tiles get checked to account for the outside area
         for (int x = -1; x < 33; x++)
         {
             for (int y = -1; y < 17;  y++)
@@ -228,10 +233,12 @@ public class GridCursor : MonoBehaviour
                 searchedList.Add(new Vector2Int(x, y));
                 if (Mathf.Clamp(x, 0, 32) != x) continue;
                 if (Mathf.Clamp(y, 0, 16) != y) continue;
+                // wallGrid is a list of bools to determine if it's a wall or not
                 if (wallGrid[x,y]) searchedList.Remove(new Vector2Int(x, y));
             }
         }
-
+        
+        // Checks the rooms with a custom class
         RoomDetectionAgent agent = new RoomDetectionAgent();
         while (searchedList.Count > 0)
         {
@@ -240,6 +247,7 @@ public class GridCursor : MonoBehaviour
             roomArray.Add(newRoom);
         }
 
+        // Creates the visual aspect of each room
         for (int x = 0; x < roomArray.Count; x++)
         {
             if (x >= roomColorList.Count) continue;

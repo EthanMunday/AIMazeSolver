@@ -4,13 +4,17 @@ using UnityEngine;
 
 public class RoomDetectionAgent
 {
+    // The bounds of my area
     const int xMin = 0;
     const int xMax = 32;
     const int yMin = 0;
     const int yMax = 16;
+    
+    // DFS with nodes being the surrounding 4 tiles
     public void CheckRoom(Vector2Int roomPos, ref List<Vector2Int> checkedList, ref List<Vector2Int> roomList, ref bool[,] wallData)
     {
         checkedList.Remove(roomPos);
+        // Only adds valid tiles to the room but still performs the check on the outer border
         if (CheckValidBool(roomPos)) roomList.Add(roomPos);
         for (int x = -1; x < 2; x++)
         {
@@ -26,6 +30,7 @@ public class RoomDetectionAgent
         }
     }
 
+    // Checks if the position is within the playable zone
     bool CheckValidBool(Vector2 _roomPos)
     {
         if (Mathf.Clamp(_roomPos.x, xMin, xMax) != _roomPos.x) return false;

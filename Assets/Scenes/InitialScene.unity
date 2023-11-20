@@ -450,6 +450,14 @@ MonoBehaviour:
   wallMask:
     serializedVersion: 2
     m_Bits: 1
+  floor: {fileID: 5745028180424704312, guid: 48715ff3b10c9c84fa271b670da0637a, type: 3}
+  roomColorList:
+  - {r: 0.14858341, g: 1, b: 0, a: 1}
+  - {r: 1, g: 0.5041456, b: 0, a: 1}
+  - {r: 1, g: 0.849145, b: 0, a: 1}
+  - {r: 0, g: 0.5471077, b: 1, a: 1}
+  - {r: 1, g: 0, b: 0.83837795, a: 1}
+  - {r: 0, g: 1, b: 0.8366351, a: 1}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

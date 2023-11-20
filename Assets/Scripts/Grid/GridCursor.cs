@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UIElements;
 
 public class GridCursor : MonoBehaviour
 {
@@ -14,6 +15,11 @@ public class GridCursor : MonoBehaviour
     List<GameObject> wallObjList;
     List<WallData> wallDataList;
 
+
+    public GameObject floor;
+    public List<Color> roomColorList;
+    List<GameObject> roomObjList;
+
     ControlBindings bindings;
     InputAction lmb;
     InputAction rmb;
@@ -25,9 +31,11 @@ public class GridCursor : MonoBehaviour
         cameraComponent = FindFirstObjectByType<Camera>();
         bindings = ControlManager.inputs;
 
-        wallGrid = new bool[33, 18];
+        wallGrid = new bool[33, 17];
         wallDataList = new List<WallData>();
         wallObjList = new List<GameObject>();
+
+        roomObjList = new List<GameObject>();
 
         for (int i = 0; i < wallGrid.GetLength(0); i++)
         {
@@ -56,6 +64,7 @@ public class GridCursor : MonoBehaviour
             {
                 wallGrid[hitPoint.x, hitPoint.y] = true;
                 UpdateGrid2();
+                RoomDetection();
             }
         }
 
@@ -65,6 +74,7 @@ public class GridCursor : MonoBehaviour
             {
                 wallGrid[hitPoint.x, hitPoint.y] = false;
                 UpdateGrid2();
+                RoomDetection();    
             }
         }
     }
@@ -187,11 +197,57 @@ public class GridCursor : MonoBehaviour
     private void CreateWall(Vector3 _midPoint, Vector3 _scale)
     {
         if (wallDataList.Contains(new WallData { position = _midPoint, scale = _scale })) return;
-        GameObject newblock = Instantiate(wall, _midPoint + new Vector3(0.5f, 0.5f), Quaternion.Euler(Vector3.zero));
+        GameObject newblock = Instantiate(wall, _midPoint + new Vector3(0.5f, 0.5f, -0.5f), Quaternion.Euler(Vector3.zero));
         newblock.transform.parent = transform;
         newblock.transform.localScale = _scale;
         wallObjList.Add(newblock);
         wallDataList.Add(new WallData { position = _midPoint, scale = _scale });
+    }
+
+    void CreateFloor(Vector2Int _midPoint, Color _color)
+    {
+        Vector3Int newPos = new Vector3Int(_midPoint.x,_midPoint.y);
+        GameObject newblock = Instantiate(floor, globalGrid.CellToWorld(newPos) + new Vector3(0.5f, 0.5f, -0.5f), Quaternion.identity);
+        newblock.GetComponent<SpriteRenderer>().color = _color;
+        roomObjList.Add(newblock);
+        newblock.transform.parent = transform;
+        newblock.transform.localScale *= 2;
+    }
+
+    private void RoomDetection()
+    {
+        foreach (GameObject room in roomObjList) Destroy(room);
+
+        List<Vector2Int> searchedList = new List<Vector2Int>();
+        List<List<Vector2Int>> roomArray = new List<List<Vector2Int>>();
+
+        for (int x = -1; x < 33; x++)
+        {
+            for (int y = -1; y < 17;  y++)
+            {
+                searchedList.Add(new Vector2Int(x, y));
+                if (Mathf.Clamp(x, 0, 32) != x) continue;
+                if (Mathf.Clamp(y, 0, 16) != y) continue;
+                if (wallGrid[x,y]) searchedList.Remove(new Vector2Int(x, y));
+            }
+        }
+
+        RoomDetectionAgent agent = new RoomDetectionAgent();
+        while (searchedList.Count > 0)
+        {
+            List<Vector2Int> newRoom = new List<Vector2Int>();
+            agent.CheckRoom(searchedList[0], ref searchedList, ref newRoom, ref wallGrid);
+            roomArray.Add(newRoom);
+        }
+
+        for (int x = 0; x < roomArray.Count; x++)
+        {
+            if (x >= roomColorList.Count) continue;
+            foreach(Vector2Int room in roomArray[x])
+            {
+                CreateFloor(room, roomColorList[x]);
+            }
+        }
     }
 
     public struct WallData

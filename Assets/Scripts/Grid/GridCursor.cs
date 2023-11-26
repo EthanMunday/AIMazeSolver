@@ -5,6 +5,9 @@ using UnityEngine.InputSystem;
 
 public class GridCursor : MonoBehaviour
 {
+    public int gridXSize;
+    public int gridYSize;
+    public string saveLoad;
     Grid globalGrid;
     Camera cameraComponent;
 
@@ -25,7 +28,7 @@ public class GridCursor : MonoBehaviour
         cameraComponent = FindFirstObjectByType<Camera>();
         bindings = ControlManager.inputs;
 
-        wallGrid = new bool[33, 18];
+        wallGrid = new bool[gridXSize+1, gridYSize+1];
         wallDataList = new List<WallData>();
         wallObjList = new List<GameObject>();
 
@@ -48,11 +51,11 @@ public class GridCursor : MonoBehaviour
         RaycastHit2D hit = Physics2D.Raycast(ray, Vector2.zero, 100f, wallMask);
         if (hit.collider == null) return;
         Vector3Int hitPoint = globalGrid.WorldToCell(hit.point);
-        hitPoint.x = Mathf.Clamp(hitPoint.x, 0, 32);
-        hitPoint.y = Mathf.Clamp(hitPoint.y, 0, 17);
+        hitPoint.x = Mathf.Clamp(hitPoint.x, 0, gridXSize);
+        hitPoint.y = Mathf.Clamp(hitPoint.y, 0, gridYSize);
         if (input.x == 1.0f && !wallGrid[hitPoint.x, hitPoint.y])
         {
-            if (hitPoint.x < 33 && hitPoint.y < 18)
+            if (hitPoint.x < gridXSize + 1 && hitPoint.y < gridYSize + 1)
             {
                 wallGrid[hitPoint.x, hitPoint.y] = true;
                 UpdateGrid2();
@@ -61,7 +64,7 @@ public class GridCursor : MonoBehaviour
 
         else if (input.y == 1.0f && wallGrid[hitPoint.x, hitPoint.y])
         {
-            if (hitPoint.x < 33 && hitPoint.y < 18)
+            if (hitPoint.x < gridXSize + 1 && hitPoint.y < gridYSize + 1)
             {
                 wallGrid[hitPoint.x, hitPoint.y] = false;
                 UpdateGrid2();
@@ -108,9 +111,9 @@ public class GridCursor : MonoBehaviour
             {
                 if (!wallGrid[x, y]) continue;
                 List<Vector2Int> newHorizontalList = new List<Vector2Int> { new Vector2Int(x, y) };
-                if (Mathf.Clamp(x + 1, 0, 32) == x + 1)
+                if (Mathf.Clamp(x + 1, 0, gridXSize) == x + 1)
                 {
-                    for (int i = x + 1; i < 33; i++)
+                    for (int i = x + 1; i < gridXSize + 1; i++)
                     {
                         if (!wallGrid[i, y]) break;
                         newHorizontalList.Add(new Vector2Int(i, y));
@@ -127,9 +130,9 @@ public class GridCursor : MonoBehaviour
             {
                 if (!wallGrid[x, y]) continue;
                 List<Vector2Int> newVerticalList = new List<Vector2Int> { new Vector2Int(x, y) };
-                if (Mathf.Clamp(y + 1, 0, 16) == y + 1)
+                if (Mathf.Clamp(y + 1, 0, gridYSize) == y + 1)
                 {
-                    for (int i = y + 1; i < 17; i++)
+                    for (int i = y + 1; i < gridYSize + 1; i++)
                     {
                         if (!wallGrid[x, i]) break;
                         newVerticalList.Add(new Vector2Int(x, i));
@@ -192,6 +195,21 @@ public class GridCursor : MonoBehaviour
         newblock.transform.localScale = _scale;
         wallObjList.Add(newblock);
         wallDataList.Add(new WallData { position = _midPoint, scale = _scale });
+    }
+
+    public void SaveGame()
+    {
+        GridSaveLoader.SaveToFile(saveLoad, wallGrid);
+    }
+
+    public void LoadGame()
+    {
+        bool[,] newGrid = GridSaveLoader.LoadFromFile(saveLoad);
+        if (newGrid == null) return;
+        if (newGrid.GetLength(0) != wallGrid.GetLength(0)) return;
+        if (newGrid.GetLength(1) != wallGrid.GetLength(1)) return;
+        wallGrid = newGrid;
+        UpdateGrid2();
     }
 
     public struct WallData

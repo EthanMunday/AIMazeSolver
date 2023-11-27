@@ -19,7 +19,6 @@ public class GridSaveLoader : MonoBehaviour
             for (int y = 0;  y < _data.GetLength(1); y++) newSave.values[x * newSave.ySize + y] = _data[x, y];
         }
         string output  = JsonUtility.ToJson(newSave);
-        Debug.Log(Path.Combine(Application.dataPath + savePath + _name + ".txt"));
         File.WriteAllText(Path.Combine(Application.dataPath + savePath + _name + ".txt"), output);
     }
     public static bool[,] LoadFromFile(string _name)

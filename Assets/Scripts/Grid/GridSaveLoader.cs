@@ -8,12 +8,14 @@ using UnityEngine;
 public class GridSaveLoader : MonoBehaviour
 {
     static string savePath = "/Scripts/Grid/GridTypes/";
-    public static void SaveToFile(string _name, bool[,] _data)
+    public static void SaveToFile(string _name, bool[,] _data, bool _isBaked)
     {
         SaveData newSave = new SaveData();
         newSave.xSize = _data.GetLength(0);
         newSave.ySize = _data.GetLength(1);
         newSave.values = new bool[newSave.xSize * newSave.ySize];
+        newSave.isBaked = _isBaked;
+        if (_isBaked) newSave.navMeshNodes = Node.nodeList;
         for (int x = 0; x < _data.GetLength(0); x++)
         {
             for (int y = 0;  y < _data.GetLength(1); y++) newSave.values[x * newSave.ySize + y] = _data[x, y];
@@ -25,6 +27,7 @@ public class GridSaveLoader : MonoBehaviour
     {
         if (File.Exists(Path.Combine(Application.dataPath + savePath + _name + ".txt")))
         {
+            Node.DestroyAllNodes();
             string input = File.ReadAllText(Path.Combine(Application.dataPath + savePath + _name + ".txt"));
             SaveData foundData = JsonUtility.FromJson<SaveData>(input);
             bool[,] returnValue = new bool[foundData.xSize, foundData.ySize];
@@ -35,6 +38,7 @@ public class GridSaveLoader : MonoBehaviour
                     returnValue[x, y] = foundData.values[x * foundData.ySize + y];
                 }
             }
+            if (foundData.isBaked) FindFirstObjectByType<CustomNavmesh>().LoadNavmesh(foundData.navMeshNodes);
             return returnValue;
         }
         return null;
@@ -48,4 +52,6 @@ class SaveData
     public int xSize;
     public int ySize;
     public bool[] values;
+    public bool isBaked;
+    public List<Node> navMeshNodes;
 }

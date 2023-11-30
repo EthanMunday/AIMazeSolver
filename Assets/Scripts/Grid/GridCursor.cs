@@ -9,6 +9,7 @@ public class GridCursor : MonoBehaviour
 {
     public static int gridXSize = 50;
     public static int gridYSize = 25;
+    public static bool isBaked = false;
     public static string saveLoad;
     WallGrid wallGrid;
     Camera cameraComponent;
@@ -91,7 +92,7 @@ public class GridCursor : MonoBehaviour
 
     public void SaveGame()
     {
-        GridSaveLoader.SaveToFile(saveLoad, wallGrid.values);
+        GridSaveLoader.SaveToFile(saveLoad, wallGrid.values, isBaked);
     }
 
     public void LoadGame()

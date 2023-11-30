@@ -5,17 +5,17 @@ using UnityEngine;
 public class AIMovementController
 {
     public float movementSpeed;
-    Vector3 movementVector;
+    Vector2 movementVector;
     GameObject pawn;
 
     public void AddMovementInput(Vector2 input)
     {
-        movementVector += new Vector3(input.x, input.y);
+        movementVector += input;
     }
 
     public void CalculateInput()
     {
-        pawn.transform.position += movementVector.normalized * Time.deltaTime * movementSpeed;
+        pawn.GetComponent<Rigidbody2D>().position += movementVector.normalized * Time.deltaTime * movementSpeed;
         movementVector = Vector3.zero;
     }
 

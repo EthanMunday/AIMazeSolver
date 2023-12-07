@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
@@ -94,10 +95,9 @@ public class WallGrid
                 verticalLists.Add(newVerticalList);
             }
         }
-
         InstantiateLists(0, horizontalLists, verticalLists);
         InstantiateLists(1, verticalLists, horizontalLists);
-        CheckForIntersections();
+        
     }
 
     void InstantiateLists(int _dimension, List<List<Vector2Int>> _listArray, List<List<Vector2Int>> _alternateArray)
@@ -114,8 +114,6 @@ public class WallGrid
             }
             Vector3 first = globalGrid.CellToWorld(new Vector3Int(currentList[0].x, currentList[0].y));
             Vector3 last = globalGrid.CellToWorld(new Vector3Int(currentList[currentList.Count - 1].x, currentList[currentList.Count - 1].y));
-            AddToNavmeshList(first);
-            AddToNavmeshList(last);
             Vector3 position = (first + last) / 2;
             Vector3 scale = CalculateScale(currentList.Count, _dimension);
             CreateWall(position, scale);
@@ -156,67 +154,6 @@ public class WallGrid
         return rv;
     }
 
-    void AddToNavmeshList(Vector3 _position)
-    {
-        Vector3 newPosition = _position += Vector3.one / 2;
-        if (vertexPoints.ContainsKey(newPosition)) return;
-        bool[] newWallData = new bool[4];
-        Vector3Int wallPosition = globalGrid.WorldToCell(newPosition);
-        if (Mathf.Clamp(wallPosition.x - 1, 0, gridXSize) == wallPosition.x - 1)
-        {
-            if (values[wallPosition.x - 1, wallPosition.y])
-            {
-                newWallData[0] = true;
-                newWallData[1] = true;
-            }
-        }
-
-        if (Mathf.Clamp(wallPosition.x + 1, 0, gridXSize) == wallPosition.x + 1)
-        {
-            if (values[wallPosition.x + 1, wallPosition.y])
-            {
-                newWallData[2] = true;
-                newWallData[3] = true;
-            }
-        }
-
-        if (Mathf.Clamp(wallPosition.y - 1, 0, gridYSize) == wallPosition.y - 1)
-        {
-            if (values[wallPosition.x, wallPosition.y - 1])
-            {
-                newWallData[0] = !newWallData[0];
-                newWallData[2] = !newWallData[2];
-            }
-        }
-
-        if (Mathf.Clamp(wallPosition.y + 1, 0, gridYSize) == wallPosition.y + 1)
-        {
-            if (values[wallPosition.x, wallPosition.y + 1])
-            {
-                newWallData[1] = !newWallData[1];
-                newWallData[3] = !newWallData[3];
-            }
-        }
-        vertexPoints.Add(newPosition, newWallData);
-
-    }
-
-    void CheckForIntersections()
-    {
-        for (int y = 1; y < gridYSize - 1; y++)
-        {
-            for (int x = 1; x < gridXSize - 1; x++)
-            {
-                if (!values[x, y]) continue;
-                if (!values[x + 1, y]) continue;
-                if (!values[x - 1, y]) continue;
-                if (!values[x, y + 1]) continue;
-                if (!values[x, y - 1]) continue;
-                AddToNavmeshList(globalGrid.CellToWorld(new Vector3Int(x, y)));
-            }
-        }
-        
-    }
 
     public WallGrid(int _xSize, int _ySize, Grid _gridReference, GameObject _wallObject, GameObject _gridObject)
     {

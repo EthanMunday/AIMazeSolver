@@ -11,7 +11,7 @@ public class GridCursor : MonoBehaviour
     public static int gridYSize = 25;
     public static bool isBaked = false;
     public static string saveLoad;
-    WallGrid wallGrid;
+    public WallGrid wallGrid;
     Camera cameraComponent;
 
     ControlBindings bindings;

@@ -11,6 +11,7 @@ public class NavmeshManager : MonoBehaviour
 {
     public GameObject fakeNodeObject;
     public static GameObject fakeNodeObjectClone;
+    static NavmeshTriangulator triangulator;
     static WallGrid grid;
     static Grid globalGrid;
     static List<GameObject> fakeNodes;
@@ -19,6 +20,7 @@ public class NavmeshManager : MonoBehaviour
     {
         fakeNodeObjectClone = fakeNodeObject;
         grid = FindFirstObjectByType<GridCursor>().wallGrid;
+        triangulator = GetComponent<NavmeshTriangulator>();
         globalGrid = FindFirstObjectByType<Grid>();
         fakeNodes = new List<GameObject>();
     }
@@ -31,8 +33,8 @@ public class NavmeshManager : MonoBehaviour
     {
         NavmeshAgent agent = new NavmeshAgent(gridValues, globalGrid);
         List<Vector2Int> alreadySearched = new List<Vector2Int>();
-        List<List<PolygonPoint>> pointListArray = new List<List<PolygonPoint>>();
-        List<PolygonPoint> startingPoints = AddStartingPoints(gridValues);
+        List<List<Vertex>> pointListArray = new List<List<Vertex>>();
+        List<Vertex> startingPoints = AddStartingPoints(gridValues);
         pointListArray.Add(startingPoints);
         for (int y = 0; y < gridValues.GetLength(1); y++)
         {
@@ -44,24 +46,25 @@ public class NavmeshManager : MonoBehaviour
                 agent.position = currentPosition + new Vector2Int(-1,0);
                 if (!alreadySearched.Contains(agent.position) && IsInData(currentPosition, gridValues, false))
                 {
-                    List<PolygonPoint> newPoints = agent.Search(0, ref alreadySearched);
+                    List<Vertex> newPoints = agent.Search(0, ref alreadySearched);
                     if (newPoints.Count >= 4) pointListArray.Add(newPoints);
                 }
 
                 agent.position = currentPosition + new Vector2Int(1, 0);
                 if (!alreadySearched.Contains(agent.position) && IsInData(currentPosition, gridValues, false))
                 {
-                    List<PolygonPoint> newPoints = agent.Search(1, ref alreadySearched);
+                    List<Vertex> newPoints = agent.Search(1, ref alreadySearched);
                     if (newPoints.Count >= 4) pointListArray.Add(newPoints);
                 }
             }
         }
         DisplayNavmesh(pointListArray);
+        triangulator.TriangulatePoints(pointListArray);
     }
 
-    static List<PolygonPoint> AddStartingPoints(bool[,] _values) 
+    static List<Vertex> AddStartingPoints(bool[,] _values) 
     {
-        List<PolygonPoint> points = new List<PolygonPoint>();
+        List<Vertex> points = new List<Vertex>();
         int xSize = _values.GetLength(0);
         int ySize = _values.GetLength(1);
         for (int x = 0; x < xSize; x += xSize - 1)
@@ -69,22 +72,22 @@ public class NavmeshManager : MonoBehaviour
             for (int y = 0; y < ySize; y += ySize - 1)
             {
                 Vector3 transformedPositiom = globalGrid.CellToWorld(new Vector3Int(x, y));
-                points.Add(new PolygonPoint { point = transformedPositiom + Vector3.one / 2, isExcluded = false });
+                points.Add(new Vertex (transformedPositiom + Vector3.one / 2));
             }
         }
         return points;
     }
 
-    static void DisplayNavmesh(List<List<PolygonPoint>> _listArray)
+    static void DisplayNavmesh(List<List<Vertex>> _listArray)
     {
         foreach (GameObject node in fakeNodes) Destroy(node);
         fakeNodes.Clear();
 
-        foreach (List<PolygonPoint> list in _listArray)
+        foreach (List<Vertex> list in _listArray)
         {
-            foreach(PolygonPoint point in list)
+            foreach(Vertex point in list)
             {
-                GameObject currentObj = Instantiate(fakeNodeObjectClone, point.point, Quaternion.identity);
+                GameObject currentObj = Instantiate(fakeNodeObjectClone, point.position, Quaternion.identity);
                 fakeNodes.Add(currentObj);
             }
         }
@@ -120,12 +123,12 @@ public class NavmeshAgent
     int xSize;
     int ySize;
 
-    public List<PolygonPoint> Search(int _isInside, ref List<Vector2Int> alreadyVisited)
+    public List<Vertex> Search(int _isInside, ref List<Vector2Int> alreadyVisited)
     {
         direction = new Vector2Int(0, 1);
         Vector2Int initialPosition = position;
         List<Vector2Int> visitedList = new List<Vector2Int>();
-        List<PolygonPoint> rv = new List<PolygonPoint>();
+        List<Vertex> rv = new List<Vertex>();
         bool isSearching = true;
         int searchDepth = 0;
 
@@ -172,14 +175,14 @@ public class NavmeshAgent
         return false;
     }
 
-    void AddToList(Vector2Int point, ref List<PolygonPoint> list, int _isInside)
+    void AddToList(Vector2Int point, ref List<Vertex> list, int _isInside)
     {
         if (Mathf.Clamp(point.x, 0, xSize - 1) == point.x)
         {
             if (Mathf.Clamp(point.y, 0, ySize - 1) == point.y)
             {
-                Vector3 transformedPositiom = globalGrid.CellToWorld(new Vector3Int(point.x, point.y));
-                list.Add(new PolygonPoint { point = transformedPositiom + Vector3.one / 2, isExcluded = (_isInside == 0) });
+                Vector2 transformedPositiom = globalGrid.CellToWorld(new Vector3Int(point.x, point.y));
+                list.Add(new Vertex(transformedPositiom + Vector2.one / 2));
             }
         }
     }
@@ -224,9 +227,4 @@ public class NavmeshAgent
         ySize = data.GetLength(1);
         globalGrid = _globalGrid;
     }
-}
-public struct PolygonPoint
-{
-    public Vector3 point;
-    public bool isExcluded;
 }

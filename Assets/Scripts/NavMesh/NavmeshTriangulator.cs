@@ -1,10 +1,77 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngineInternal;
 
 public class NavmeshTriangulator : MonoBehaviour
 {
+    public List<Triangle> DelaunayTriangulation(List<List<Vertex>> pointListArray)
+    {
+        List<Triangle> triangles = TriangulatePoints(pointListArray);
+        List<HalfEdge> edges = TriangulationSystem.TrianglesToHalfEdges(triangles);
+        int safety = 0;
+
+        int flippedEdges = 0;
+
+        while (true)
+        {
+            safety += 1;
+
+            if (safety > 100000)
+            {
+                Debug.Log("Stuck in endless loop");
+
+                break;
+            }
+
+            bool hasFlippedEdge = false;
+
+            for (int i = 0; i < edges.Count; i++)
+            {
+                HalfEdge thisEdge = edges[i];
+
+                if (thisEdge.opposite == null)
+                {
+                    continue;
+                }
+
+                Vector2 aPos = thisEdge.vertex.position;
+                Vector2 bPos = thisEdge.next.vertex.position;
+                Vector2 cPos = thisEdge.previous.vertex.position;
+                Vector2 dPos = thisEdge.opposite.next.vertex.position;
+
+                if (TriangulationSystem.IsPointInsideOutsideOrOnCircle(aPos, bPos, cPos, dPos) < 0f)
+                {
+                    if (TriangulationSystem.IsQuadrilateralConvex(aPos, bPos, cPos, dPos))
+                    {
+                        if (TriangulationSystem.IsPointInsideOutsideOrOnCircle(bPos, cPos, dPos, aPos) < 0f)
+                        {
+                            continue;
+                        }
+
+                        flippedEdges += 1;
+                        hasFlippedEdge = true;
+                        thisEdge.Flip();
+                    }
+                }
+            }
+
+            if (!hasFlippedEdge)
+            {
+                Debug.Log("Found a delaunay triangulation");
+                Debug.Log(flippedEdges);
+
+                break;
+            }
+        }
+
+        DisplayLines(triangles, Color.red, 6f);
+        return triangles;
+    }
+
     public List<Triangle> TriangulatePoints(List<List<Vertex>> pointListAray)
     {
         List<Triangle> triangles = new List<Triangle>();
@@ -41,7 +108,7 @@ public class NavmeshTriangulator : MonoBehaviour
                         continue;
                     }
 
-                    if (AreEdgesIntersecting(edgeToMidpoint, edges[k]))
+                    if (TriangulationSystem.AreEdgesIntersecting(edgeToMidpoint, edges[k]))
                     {
                         canSeeEdge = false;
 
@@ -64,55 +131,13 @@ public class NavmeshTriangulator : MonoBehaviour
                 edges.Add(newEdges[j]);
             }
         }
-        DisplayLines(triangles);
+
+        DisplayLines(triangles, Color.green, 12f);
         return triangles;
     }
 
 
-
-    private static bool AreEdgesIntersecting(Edge edge1, Edge edge2)
-    {
-        Vector2 l1_p1 = new Vector2(edge1.point1.position.x, edge1.point1.position.y);
-        Vector2 l1_p2 = new Vector2(edge1.point2.position.x, edge1.point2.position.y);
-
-        Vector2 l2_p1 = new Vector2(edge2.point1.position.x, edge2.point1.position.y);
-        Vector2 l2_p2 = new Vector2(edge2.point2.position.x, edge2.point2.position.y);
-
-        bool isIntersecting = AreLinesIntersecting(l1_p1, l1_p2, l2_p1, l2_p2, true);
-
-        return isIntersecting;
-    }
-
-    public static bool AreLinesIntersecting(Vector2 l1_p1, Vector2 l1_p2, Vector2 l2_p1, Vector2 l2_p2, bool shouldIncludeEndPoints)
-    {
-        bool isIntersecting = false;
-        float denominator = (l2_p2.y - l2_p1.y) * (l1_p2.x - l1_p1.x) - (l2_p2.x - l2_p1.x) * (l1_p2.y - l1_p1.y);
-
-        if (denominator != 0f)
-        {
-            float u_a = ((l2_p2.x - l2_p1.x) * (l1_p1.y - l2_p1.y) - (l2_p2.y - l2_p1.y) * (l1_p1.x - l2_p1.x)) / denominator;
-            float u_b = ((l1_p2.x - l1_p1.x) * (l1_p1.y - l2_p1.y) - (l1_p2.y - l1_p1.y) * (l1_p1.x - l2_p1.x)) / denominator;
-
-            if (shouldIncludeEndPoints)
-            {
-                if (u_a >= 0f && u_a <= 1f && u_b >= 0f && u_b <= 1f)
-                {
-                    isIntersecting = true;
-                }
-            }
-            else
-            {
-                if (u_a > 0f && u_a < 1f && u_b > 0f && u_b < 1f)
-                {
-                    isIntersecting = true;
-                }
-            }
-
-        }
-        return isIntersecting;
-    }
-
-    void DisplayLines(List<Triangle> _triangles)
+    void DisplayLines(List<Triangle> _triangles, Color color, float time)
     {
         foreach (Triangle currentTriangle in _triangles)
         {
@@ -120,9 +145,11 @@ public class NavmeshTriangulator : MonoBehaviour
             Vector3 p2 = new Vector3(currentTriangle.point2.position.x, currentTriangle.point2.position.y);
             Vector3 p3 = new Vector3(currentTriangle.point3.position.x, currentTriangle.point3.position.y);
 
-            Debug.DrawLine(p1, p2, Color.green, 8f);
-            Debug.DrawLine(p2, p3, Color.green, 8f);
-            Debug.DrawLine(p3, p1, Color.green, 8f);
+            Debug.DrawLine(p1, p2, color, time);
+            Debug.DrawLine(p2, p3, color, time);
+            Debug.DrawLine(p3, p1, color, time);
         }
     }
+
+    
 }

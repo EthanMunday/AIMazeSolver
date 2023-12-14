@@ -54,12 +54,12 @@ public class NavmeshManager : MonoBehaviour
                 if (!alreadySearched.Contains(agent.position) && IsInData(currentPosition, gridValues, false))
                 {
                     List<Vertex> newPoints = agent.Search(1, ref alreadySearched);
-                    if (newPoints.Count >= 4) pointListArray.Add(newPoints);
+                    //if (newPoints.Count >= 4) pointListArray.Add(newPoints);
                 }
             }
         }
         DisplayNavmesh(pointListArray);
-        triangulator.TriangulatePoints(pointListArray);
+        triangulator.DelaunayTriangulation(pointListArray);
     }
 
     static List<Vertex> AddStartingPoints(bool[,] _values) 

@@ -1105,6 +1105,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1006478073}
   - component: {fileID: 1006478074}
+  - component: {fileID: 1006478075}
   m_Layer: 0
   m_Name: Navmesh
   m_TagString: Untagged
@@ -1140,6 +1141,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fakeNodeObject: {fileID: 6223278345451710300, guid: 8531938be6244da4d9a0fc454d3bf28c, type: 3}
+--- !u!114 &1006478075
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1006478071}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf6246229e6174d4d806b49dd53ddcaf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1437103362
 GameObject:
   m_ObjectHideFlags: 0

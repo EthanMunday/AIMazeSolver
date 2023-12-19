@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEditor.Build;
@@ -33,9 +34,9 @@ public class NavmeshManager : MonoBehaviour
     {
         NavmeshAgent agent = new NavmeshAgent(gridValues, globalGrid);
         List<Vector2Int> alreadySearched = new List<Vector2Int>();
-        List<List<Vertex>> pointListArray = new List<List<Vertex>>();
-        List<Vertex> startingPoints = AddStartingPoints(gridValues);
-        pointListArray.Add(startingPoints);
+        List<NavmeshPoints> pointsList = new List<NavmeshPoints>();
+        List<Vertex> startingPoints = AddStartingPoints(gridValues, pointsList);
+        pointsList.Add(new NavmeshPoints(startingPoints, true));
         for (int y = 0; y < gridValues.GetLength(1); y++)
         {
             for (int x = 0; x < gridValues.GetLength(0); x++)
@@ -47,26 +48,27 @@ public class NavmeshManager : MonoBehaviour
                 if (!alreadySearched.Contains(agent.position) && IsInData(currentPosition, gridValues, false))
                 {
                     List<Vertex> newPoints = agent.Search(0, ref alreadySearched);
-                    if (newPoints.Count >= 4) pointListArray.Add(newPoints);
+                    if (newPoints.Count >= 4) pointsList.Add(new NavmeshPoints(newPoints, false));
                 }
 
                 agent.position = currentPosition + new Vector2Int(1, 0);
                 if (!alreadySearched.Contains(agent.position) && IsInData(currentPosition, gridValues, false))
                 {
                     List<Vertex> newPoints = agent.Search(1, ref alreadySearched);
-                    //if (newPoints.Count >= 4) pointListArray.Add(newPoints);
+                    //if (newPoints.Count >= 4) pointsList.Add(new NavmeshPoints(newPoints, true));
                 }
             }
         }
-        DisplayNavmesh(pointListArray);
-        triangulator.DelaunayTriangulation(pointListArray);
+        DisplayNavmesh(pointsList);
+        triangulator.ConstrainedDelaunay(pointsList);
     }
 
-    static List<Vertex> AddStartingPoints(bool[,] _values) 
+    static List<Vertex> AddStartingPoints(bool[,] _values, List<NavmeshPoints> pointsList) 
     {
         List<Vertex> points = new List<Vertex>();
         int xSize = _values.GetLength(0);
         int ySize = _values.GetLength(1);
+
         for (int x = 0; x < xSize; x += xSize - 1)
         {
             for (int y = 0; y < ySize; y += ySize - 1)
@@ -78,14 +80,15 @@ public class NavmeshManager : MonoBehaviour
         return points;
     }
 
-    static void DisplayNavmesh(List<List<Vertex>> _listArray)
+    static void DisplayNavmesh(List<NavmeshPoints> _pointsArray)
     {
         foreach (GameObject node in fakeNodes) Destroy(node);
         fakeNodes.Clear();
 
-        foreach (List<Vertex> list in _listArray)
+        foreach (NavmeshPoints currentPoints in _pointsArray)
         {
-            foreach(Vertex point in list)
+            if (currentPoints.isInside) continue;
+            foreach(Vertex point in currentPoints.points)
             {
                 GameObject currentObj = Instantiate(fakeNodeObjectClone, point.position, Quaternion.identity);
                 fakeNodes.Add(currentObj);
@@ -226,5 +229,17 @@ public class NavmeshAgent
         xSize = data.GetLength(0);
         ySize = data.GetLength(1);
         globalGrid = _globalGrid;
+    }
+}
+
+public struct NavmeshPoints
+{
+    public List<Vertex> points;
+    public bool isInside;
+
+    public NavmeshPoints(List<Vertex> _points, bool _isInside)
+    {
+        points = _points;
+        isInside = _isInside;
     }
 }

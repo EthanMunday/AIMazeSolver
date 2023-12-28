@@ -10,31 +10,35 @@ using UnityEngine.Rendering;
 
 public class NavmeshManager : MonoBehaviour
 {
-    public GameObject fakeNodeObject;
-    public static GameObject fakeNodeObjectClone;
-    static NavmeshTriangulator triangulator;
+    static float displayTime = 7f;
+    static GameObject fakeNodeObject;
+    static GameObject displayNodesObject;
+    static List<GameObject> fakeNodes;
     static WallGrid grid;
     static Grid globalGrid;
-    static List<GameObject> fakeNodes;
+    static CustomNavmesh currentNavmesh;
 
     private void Start()
     {
-        fakeNodeObjectClone = fakeNodeObject;
+        fakeNodeObject = Resources.Load<GameObject>("Circle");
+        fakeNodes = new();
+        displayNodesObject = new GameObject("Display Nodes");
+        displayNodesObject.transform.parent = this.transform;
         grid = FindFirstObjectByType<GridCursor>().wallGrid;
-        triangulator = GetComponent<NavmeshTriangulator>();
         globalGrid = FindFirstObjectByType<Grid>();
-        fakeNodes = new List<GameObject>();
+        currentNavmesh = GetComponent<CustomNavmesh>();
     }
 
     public static void BakeNavmeshes()
     {
         BakeNavmeshes(grid.values);
     }
+
     public static void BakeNavmeshes(bool[,] gridValues)
     {
         NavmeshAgent agent = new NavmeshAgent(gridValues, globalGrid);
-        List<Vector2Int> alreadySearched = new List<Vector2Int>();
-        List<NavmeshPoints> pointsList = new List<NavmeshPoints>();
+        List<Vector2Int> alreadySearched = new();
+        List<NavmeshPoints> pointsList = new();
         List<Vertex> startingPoints = AddStartingPoints(gridValues, pointsList);
         pointsList.Add(new NavmeshPoints(startingPoints, true));
         for (int y = 0; y < gridValues.GetLength(1); y++)
@@ -59,13 +63,14 @@ public class NavmeshManager : MonoBehaviour
                 }
             }
         }
-        DisplayNavmesh(pointsList);
-        triangulator.ConstrainedDelaunay(pointsList);
+        //DisplayNavmesh(pointsList);
+        List<Triangle> calculatedNavmesh = NavmeshTriangulator.ConstrainedDelaunay(pointsList, true, displayTime);
+        currentNavmesh.BakeNavmesh(calculatedNavmesh);
     }
 
     static List<Vertex> AddStartingPoints(bool[,] _values, List<NavmeshPoints> pointsList) 
     {
-        List<Vertex> points = new List<Vertex>();
+        List<Vertex> points = new();
         int xSize = _values.GetLength(0);
         int ySize = _values.GetLength(1);
 
@@ -82,16 +87,15 @@ public class NavmeshManager : MonoBehaviour
 
     static void DisplayNavmesh(List<NavmeshPoints> _pointsArray)
     {
-        foreach (GameObject node in fakeNodes) Destroy(node);
-        fakeNodes.Clear();
-
+        List<GameObject> fakeObjects = new List<GameObject>();
         foreach (NavmeshPoints currentPoints in _pointsArray)
         {
             if (currentPoints.isInside) continue;
             foreach(Vertex point in currentPoints.points)
             {
-                GameObject currentObj = Instantiate(fakeNodeObjectClone, point.position, Quaternion.identity);
+                GameObject currentObj = Instantiate(fakeNodeObject, point.position, Quaternion.identity);
                 fakeNodes.Add(currentObj);
+                currentObj.transform.parent = displayNodesObject.transform;
             }
         }
     }
@@ -145,14 +149,14 @@ public class NavmeshAgent
             int returnedCheck = CheckNext(_isInside);
             if (returnedCheck != 0)
             {
-                AddToList(position, ref rv, _isInside);
+                AddToList(position, ref rv);
                 direction = RotateVector2Int(direction, 90 * returnedCheck);
             }
 
             position += direction;
             searchDepth++;
         }
-        if (_isInside == 1) AddToList(position, ref rv, _isInside);
+        if (_isInside == 1) AddToList(position, ref rv);
 
         alreadyVisited.AddRange(visitedList);
         return rv;
@@ -178,7 +182,7 @@ public class NavmeshAgent
         return false;
     }
 
-    void AddToList(Vector2Int point, ref List<Vertex> list, int _isInside)
+    void AddToList(Vector2Int point, ref List<Vertex> list)
     {
         if (Mathf.Clamp(point.x, 0, xSize - 1) == point.x)
         {

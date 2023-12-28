@@ -8,7 +8,7 @@ public class MovementTesting : MonoBehaviour
     AIMovementController controller;
     private void Start()
     {
-        controller = new AIMovementController(this.gameObject, 3.0f);
+        //controller = new AIMovementController(this.gameObject, 3.0f);
     }
 
     private void Update()

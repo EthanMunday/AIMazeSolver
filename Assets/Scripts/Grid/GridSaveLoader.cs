@@ -8,6 +8,12 @@ using UnityEngine;
 public class GridSaveLoader : MonoBehaviour
 {
     static string savePath = "/Scripts/Grid/GridTypes/";
+    static CustomNavmesh customNavmesh;
+
+    private void Start()
+    {
+        customNavmesh = FindFirstObjectByType<CustomNavmesh>();
+    }
     public static void SaveToFile(string _name, bool[,] _data, bool _isBaked)
     {
         SaveData newSave = new SaveData();
@@ -15,7 +21,11 @@ public class GridSaveLoader : MonoBehaviour
         newSave.ySize = _data.GetLength(1);
         newSave.values = new bool[newSave.xSize * newSave.ySize];
         newSave.isBaked = _isBaked;
-        if (_isBaked) newSave.navMeshNodes = Node.nodeList;
+        if (_isBaked)
+        {
+            newSave.navMeshNodes = customNavmesh.nodes;
+            newSave.navMeshTriangles = customNavmesh.triangles;
+        }
         for (int x = 0; x < _data.GetLength(0); x++)
         {
             for (int y = 0;  y < _data.GetLength(1); y++) newSave.values[x * newSave.ySize + y] = _data[x, y];
@@ -38,7 +48,7 @@ public class GridSaveLoader : MonoBehaviour
                     returnValue[x, y] = foundData.values[x * foundData.ySize + y];
                 }
             }
-            if (foundData.isBaked) FindFirstObjectByType<CustomNavmesh>().LoadNavmesh(foundData.navMeshNodes);
+            if (foundData.isBaked) customNavmesh.LoadNavmesh(foundData.navMeshNodes, foundData.navMeshTriangles);
             return returnValue;
         }
         return null;
@@ -47,11 +57,12 @@ public class GridSaveLoader : MonoBehaviour
 }
 
 [Serializable]
-class SaveData
+struct SaveData
 {
     public int xSize;
     public int ySize;
     public bool[] values;
     public bool isBaked;
     public List<Node> navMeshNodes;
+    public List<IndexTriangle> navMeshTriangles;
 }

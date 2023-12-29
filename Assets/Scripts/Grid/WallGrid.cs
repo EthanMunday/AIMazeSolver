@@ -30,6 +30,7 @@ public class WallGrid
     public void UpdateGrid(Vector3Int _position, bool _value)
     {
         values[_position.x, _position.y] = _value;
+        GridCursor.isBaked = false;
         RefreshGeometry();
     }
 
@@ -48,7 +49,6 @@ public class WallGrid
 
     void RefreshGeometry()
     {
-        GridCursor.isBaked = false;
         wallDataList.Clear();
         vertexPoints.Clear();
         intersectionsList.Clear();

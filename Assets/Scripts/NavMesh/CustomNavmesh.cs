@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Assertions.Must;
@@ -146,11 +147,17 @@ public class NodeEdge
 
 public class CustomNavmesh : MonoBehaviour
 {
+    public static CustomNavmesh _ref;
     public List<Node> nodes = new List<Node>();
     public List<IndexTriangle> triangles = new List<IndexTriangle>();
+    public List<GameObject> currentAgents = new List<GameObject>();
     public float spawningRate;
     bool toggleSpawning = false;
-    List<GameObject> currentAgents = new List<GameObject>();
+
+    private void Start()
+    {
+        if (_ref == null) _ref = this;
+    }
 
     private void Update()
     {
@@ -189,20 +196,23 @@ public class CustomNavmesh : MonoBehaviour
         while (true)
         {
             if (safety == 1000) break;
+
             float x = GridCursor.gridXSize - 1;
             float y = GridCursor.gridYSize - 1;
             Vector2 pawn = new Vector2(UnityEngine.Random.Range(1f, x), UnityEngine.Random.Range(1f, y));
             Vector2 target = new Vector2(UnityEngine.Random.Range(1f, x), UnityEngine.Random.Range(1f, y));
+            List<Vector2> path = FindPathWithAStar(pawn, target);
 
-            if (FindPathWithAStar(pawn, target).Count != 0)
+            if (path.Count != 0)
             {
                 UnityEngine.Object agent = Instantiate(Resources.Load("AIAgent"), pawn, Quaternion.identity);
                 currentAgents.Add(agent.GameObject());
                 AIMovementController controller = agent.GetComponent<AIMovementController>();
-                controller.SetTarget(target);
+                controller.SetTarget(path);
                 controller.removeList = currentAgents;
                 return;
             }
+
             safety++;
         }
     }
@@ -231,6 +241,7 @@ public class CustomNavmesh : MonoBehaviour
         GridCursor.isBaked = true;
         foreach (Node currentNode in nodes) currentNode.Destroy();
         nodes.Clear();
+        triangles.Clear();
 
         foreach (Triangle currentTriangle in _triangles)
         {

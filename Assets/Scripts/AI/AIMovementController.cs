@@ -7,60 +7,68 @@ using UnityEngine;
 
 public class AIMovementController : MonoBehaviour
 {
+    public float movePriority = 0;
+    public float waitPriority = 0;
+    public float leavePriority = 0;
+
+    public const float PATHFINDING_PRIORITY = 3f;
+    public const float WALLAVOIDANCE_PRIORITY = 1f;
+    public const float OBSTACLEAVOIDANCE_PRIORITY = 5f;
+
     public LayerMask wallMask;
     public LayerMask agentMask;
     public float movementSpeed;
     public List<GameObject> removeList;
 
-    public const float PATHFINDING_PRIORITY = 3f;
-    public const float WALLAVOIDANCE_PRIORITY = 1f;
-    public const float OBSTACLEAVOIDANCE_PRIORITY = 5f;
-    
-    public Vector2 prevMovementVector;
-    public Vector2 movementVector;
+    public bool hasTarget = false;
+    public Vector2 target = Vector2.zero;
+    public Vector2 currentTarget = Vector2.zero;
+    public List<Vector2> targetPath = new List<Vector2>();
 
-    bool hasTarget = false;
-    Vector2 target = Vector2.zero;
-    Vector2 currentTarget = Vector2.zero;
-    List<Vector2> targetPath = new List<Vector2>();
-    static CustomNavmesh navmesh;
-
+    AIBaseState state;
+    Vector2 prevMovementVector;
+    Vector2 movementVector;
 
     private void Start()
     {
-        navmesh = FindFirstObjectByType<CustomNavmesh>();
+        state = new AIMoveState(this);
+        state.Start();
     }
 
     private void Update()
     {
-        if (!hasTarget) return;
-
-        AddMovementInput(GetWallAvoidanceSteeringForce());
-        AddMovementInput(GetPathSteeringForce());
-        //AddMovementInput(GetObstacleAvoidanceSteeringForce());
-        CalculateInput();
-        if ((transform.position - new Vector3(currentTarget.x, currentTarget.y)).magnitude < 0.1f && currentTarget != target)
+        switch (state.Update())
         {
-            targetPath.RemoveAt(0);
-            if (targetPath.Count > 0)
-            {
-                currentTarget = targetPath[0];
-            }
-        }
-
-        if ((transform.position - new Vector3(target.x, target.y)).magnitude < 0.2f)
-        {
-            hasTarget = false;
-            StartCoroutine(DestroySelf());
+            case 1:
+                switch (GetCurrentPriority())
+                {
+                    case AIPriority.Wait:
+                        state = new AIWaitState(this);
+                        break;
+                    case AIPriority.Leave:
+                        state = new AILeaveState(this);
+                        break;
+                    case AIPriority.Move:
+                        state = new AIMoveState(this);
+                        break;
+                }
+                state.Start();
+                break;
+            case -1:
+                Debug.Log("State Error Occurred");
+                removeList.Remove(gameObject);
+                Destroy(gameObject);
+                break;
+            default:
+                break;
         }
     }
 
-    public void SetTarget(Vector2 _target)
+    public void SetTarget(List<Vector2> _target)
     {
-        target = _target;
+        target = _target.Last();
         hasTarget = true;
-        if (navmesh == null) navmesh = FindFirstObjectByType<CustomNavmesh>();
-        targetPath = navmesh.FindPathWithAStar(transform.position, target);
+        targetPath = _target;
         if (targetPath.Count == 0) StartCoroutine("TargetPathFailsafe");
         else
         {
@@ -148,6 +156,31 @@ public class AIMovementController : MonoBehaviour
         }
 
         if (targetPath.Count > 0) currentTarget = targetPath[0];
+    }
+
+    public AIPriority GetCurrentPriority()
+    {
+        if (leavePriority >= waitPriority)
+        {
+            if (leavePriority >= movePriority)
+            {
+                return AIPriority.Leave;
+            }
+
+            return AIPriority.Move;
+        }
+
+        if (movePriority >= waitPriority) return AIPriority.Move;
+
+        return AIPriority.Wait;
+    }
+
+    
+    public enum AIPriority
+    {
+        Wait,
+        Move,
+        Leave
     }
 
     IEnumerator DestroySelf()

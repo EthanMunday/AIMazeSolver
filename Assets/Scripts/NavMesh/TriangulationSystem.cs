@@ -3,6 +3,11 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
+/*
+ * Most of the code in this class has been adapted from (Nordeus, 2019/2023)
+ * See LICENSES.cs for license and reference
+ */
+
 public struct Vertex
 {
     public Vector2 position;

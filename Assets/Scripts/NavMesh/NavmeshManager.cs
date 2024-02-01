@@ -36,21 +36,25 @@ public class NavmeshManager : MonoBehaviour
 
     public static void BakeNavmeshes(bool[,] gridValues)
     {
+        // Creates border searching agent
         NavmeshAgent agent = new NavmeshAgent(gridValues, globalGrid);
         List<Vector2Int> alreadySearched = new();
         List<NavmeshPoints> pointsList = new();
+        // Creates the corner points of the navmesh
         List<Vertex> startingPoints = AddStartingPoints(gridValues, pointsList);
         pointsList.Add(new NavmeshPoints(startingPoints, true));
         for (int y = 0; y < gridValues.GetLength(1); y++)
         {
             for (int x = 0; x < gridValues.GetLength(0); x++)
             {
+                // Checks each set of wall tiles
                 Vector2Int currentPosition = new Vector2Int(x, y);
                 if (alreadySearched.Contains(currentPosition) || !gridValues[x, y]) continue;
 
                 agent.position = currentPosition + new Vector2Int(-1,0);
                 if (!alreadySearched.Contains(agent.position) && IsInData(currentPosition, gridValues, false))
                 {
+                    // Searches the wall tiles and returns the border verticies
                     List<Vertex> newPoints = agent.Search(0, ref alreadySearched);
                     if (newPoints.Count >= 4) pointsList.Add(new NavmeshPoints(newPoints, false));
                 }
@@ -58,6 +62,7 @@ public class NavmeshManager : MonoBehaviour
                 agent.position = currentPosition + new Vector2Int(1, 0);
                 if (!alreadySearched.Contains(agent.position) && IsInData(currentPosition, gridValues, false))
                 {
+                    // Does the same inside the set
                     List<Vertex> newPoints = agent.Search(1, ref alreadySearched);
                     //if (newPoints.Count >= 4) pointsList.Add(new NavmeshPoints(newPoints, true));
                 }

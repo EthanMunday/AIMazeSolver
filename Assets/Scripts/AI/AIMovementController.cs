@@ -67,6 +67,7 @@ public class AIMovementController : MonoBehaviour
     public void SetTarget(List<Vector2> _target)
     {
         target = _target.Last();
+        //for (int i = 0;  i < _target.Count - 1; i++) Debug.DrawLine(_target[i], _target[i + 1], Color.black, 10f)
         hasTarget = true;
         targetPath = _target;
         if (targetPath.Count == 0) StartCoroutine("TargetPathFailsafe");

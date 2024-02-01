@@ -37,6 +37,7 @@ public class GridCursor : MonoBehaviour
 
     private void Update()
     {
+        // If the player clicks on the grid, spawn/despawn a tile
         if (input.sqrMagnitude == 0) return;
         Vector2 ray = cameraComponent.ScreenToWorldPoint(Input.mousePosition);
         RaycastHit2D hit = Physics2D.Raycast(ray, Vector2.zero, 100f);

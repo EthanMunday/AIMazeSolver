@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using Unity.VisualScripting;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.Assertions.Must;
 using UnityEngine.InputSystem.Editor;
@@ -161,13 +162,11 @@ public class CustomNavmesh : MonoBehaviour
 
     private void Update()
     {
-        if (!GridCursor.isBaked && toggleSpawning) CancelSpawning();
+        if (!GridCursor.isBaked) CancelSpawning();
     }
 
     public void ToggleSpawning()
     {
-        if (!GridCursor.isBaked) CancelSpawning();
-
         if (toggleSpawning) CancelSpawning();
 
         else
@@ -180,7 +179,7 @@ public class CustomNavmesh : MonoBehaviour
     void CancelSpawning()
     {
         toggleSpawning = false;
-        CancelInvoke();
+        CancelInvoke("SpawnAgent");
         foreach (GameObject agent in currentAgents)
         {
             Destroy(agent);
@@ -200,21 +199,30 @@ public class CustomNavmesh : MonoBehaviour
             float x = GridCursor.gridXSize - 1;
             float y = GridCursor.gridYSize - 1;
             Vector2 pawn = new Vector2(UnityEngine.Random.Range(1f, x), UnityEngine.Random.Range(1f, y));
-            Vector2 target = new Vector2(UnityEngine.Random.Range(1f, x), UnityEngine.Random.Range(1f, y));
-            List<Vector2> path = FindPathWithAStar(pawn, target);
 
-            if (path.Count != 0)
+            if (IsPointInNavmesh(pawn))
             {
                 UnityEngine.Object agent = Instantiate(Resources.Load("AIAgent"), pawn, Quaternion.identity);
                 currentAgents.Add(agent.GameObject());
                 AIMovementController controller = agent.GetComponent<AIMovementController>();
-                controller.SetTarget(path);
                 controller.removeList = currentAgents;
                 return;
             }
 
             safety++;
         }
+    }
+
+    bool IsPointInNavmesh(Vector2 _point)
+    {
+        foreach (IndexTriangle currentTriangle in triangles)
+        {
+            Node node1 = Node.nodeList[currentTriangle.point1.value];
+            Node node2 = Node.nodeList[currentTriangle.point2.value];
+            Node node3 = Node.nodeList[currentTriangle.point3.value];
+            if (TriangulationSystem.IsPointInTriangle(node1.position, node2.position, node3.position, _point)) return true;
+        }
+        return false;
     }
 
     public void ShowNavmesh(Vector2 _start, Vector2 _target)
@@ -239,16 +247,18 @@ public class CustomNavmesh : MonoBehaviour
     public void BakeNavmesh(List<Triangle> _triangles)
     {
         GridCursor.isBaked = true;
+        // Clears all current nodes
         foreach (Node currentNode in nodes) currentNode.Destroy();
         nodes.Clear();
         triangles.Clear();
-
+        // Creates new nodes
         foreach (Triangle currentTriangle in _triangles)
         {
             if (Node.PositionExists(currentTriangle.point1.position) == -1) CreateNode(currentTriangle.point1);
             if (Node.PositionExists(currentTriangle.point2.position) == -1) CreateNode(currentTriangle.point2);
             if (Node.PositionExists(currentTriangle.point3.position) == -1) CreateNode(currentTriangle.point3);
         }
+        // Adds adjacent nodes using the triangles
         foreach (Triangle currentTriangle in _triangles)
         {
             AddAdjacencies(currentTriangle);
@@ -286,10 +296,12 @@ public class CustomNavmesh : MonoBehaviour
 
     public List<Vector2> FindPathWithAStar(Vector2 _position, Vector2 _target)
     {
+        // Creates new nodes for the start and end
         List<Vector2> rv = new List<Vector2>();
         Node startNode = CreateNode(new Vertex(_position));
         Node endNode = CreateNode(new Vertex(_target));
 
+        // Connect the start and end to a triangle
         bool startLocated = false;
         bool endLocated = false;
         foreach (IndexTriangle currentTriangle in triangles)
@@ -323,6 +335,7 @@ public class CustomNavmesh : MonoBehaviour
             }
         }
 
+        // Return empty if the start and end are not located
         if (!startLocated | !endLocated)
         {
             nodes.Remove(startNode);
@@ -332,7 +345,9 @@ public class CustomNavmesh : MonoBehaviour
             return new List<Vector2>();
         }
 
+        // Performs A* on the nodes
         List<int> path = AStar(startNode, endNode);
+        // Returns the list and deletes the temporary nodes
         foreach (int index in path)
         {
             rv.Add(Node.nodeList[index].position);
@@ -365,12 +380,14 @@ public class CustomNavmesh : MonoBehaviour
         }
 
         bool pathFound = false;
+        float endCost = float.MaxValue;
         while (queue.count > 0)
         {
             NodeEdge currentEdge = queue.Pop();
             alreadySearched.Add(currentEdge);
-            float newCost = cost[currentEdge.from.value] + currentEdge.cost; 
-            
+            float newCost = cost[currentEdge.from.value] + currentEdge.cost;
+
+            if (newCost > endCost) continue;
             if (cost[currentEdge.to.value] <= newCost) continue;
 
             cost[currentEdge.to.value] = newCost;
@@ -379,6 +396,7 @@ public class CustomNavmesh : MonoBehaviour
             Node newNode = Node.nodeList[currentEdge.to.value];
             if (newNode.id == _end.id)
             {
+                endCost = newCost;
                 pathFound = true;
                 continue;
             }

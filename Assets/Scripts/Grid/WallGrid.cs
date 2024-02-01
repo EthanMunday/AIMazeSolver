@@ -20,6 +20,7 @@ public class WallGrid
 
     public void SetGrid(bool[,] _values)
     {
+        // Updates the whole grid, doesn't flag navmesh as false
         if (_values == null) return;
         if (_values.GetLength(0) != values.GetLength(0)) return;
         if (_values.GetLength(1) != values.GetLength(1)) return;
@@ -29,26 +30,15 @@ public class WallGrid
 
     public void UpdateGrid(Vector3Int _position, bool _value)
     {
+        // Updates the positions value
         values[_position.x, _position.y] = _value;
         GridCursor.isBaked = false;
         RefreshGeometry();
     }
 
-    public void UpdateGrid(Vector2Int _position, bool _value)
-    {
-        values[_position.x, _position.y] = _value;
-        RefreshGeometry();
-    }
-
-
-    public void UpdateGrid(int _xPosition, int _yPosition, bool _value)
-    {
-        values[_xPosition, _yPosition] = _value;
-        RefreshGeometry();
-    }
-
     void RefreshGeometry()
     {
+        // Clears all wall instances
         wallDataList.Clear();
         vertexPoints.Clear();
         intersectionsList.Clear();
@@ -58,6 +48,7 @@ public class WallGrid
         List<List<Vector2Int>> horizontalLists = new List<List<Vector2Int>>();
         List<List<Vector2Int>> verticalLists = new List<List<Vector2Int>>();
 
+        // Creates walls horizontally
         for (int y = 0; y < values.GetLength(1); y++)
         {
             for (int x = 0; x < values.GetLength(0); x++)
@@ -77,6 +68,7 @@ public class WallGrid
             }
         }
 
+        // Creates walls vertically
         for (int x = 0; x < values.GetLength(0); x++)
         {
             for (int y = 0; y < values.GetLength(1); y++)
@@ -95,6 +87,8 @@ public class WallGrid
                 verticalLists.Add(newVerticalList);
             }
         }
+
+        // Spawns in the objects taken from the previous creations
         InstantiateLists(0, horizontalLists, verticalLists);
         InstantiateLists(1, verticalLists, horizontalLists);
         
@@ -104,7 +98,7 @@ public class WallGrid
     {
         foreach (List<Vector2Int> currentList in _listArray)
         {
-
+            // Checks to not create duplicate walls
             if (currentList.Count == 1)
             {
                 if (IsInListArray(currentList[0], _alternateArray, currentList))

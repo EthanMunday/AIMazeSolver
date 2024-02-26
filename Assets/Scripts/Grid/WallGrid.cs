@@ -13,6 +13,7 @@ public class WallGrid
     GameObject gridObject;
     List<GameObject> wallObjList;
     List<WallData> wallDataList;
+    static List<AIWallData> wallDataListAI = new List<AIWallData>();
 
     public void SetGrid(bool[,] _values)
     {
@@ -45,6 +46,7 @@ public class WallGrid
     void RefreshGeometry()
     {
         wallDataList.Clear();
+        wallDataListAI.Clear();
         foreach (GameObject wall in wallObjList) Object.Destroy(wall);
         wallObjList.Clear();
 
@@ -107,6 +109,7 @@ public class WallGrid
             Vector3 position = (first + last) / 2;
             Vector3 scale = CalculateScale(currentList.Count, _dimension);
             CreateWall(position, scale);
+            wallDataListAI.Add(new AIWallData(first, last));
         }
     }
 
@@ -164,5 +167,17 @@ public struct WallData
 {
     public Vector3 position;
     public Vector3 scale;
+}
+
+public class AIWallData
+{
+    public Vector3 start;
+    public Vector3 end;
+
+    public AIWallData(Vector3 _start, Vector3 _end)
+    {
+        start = _start;
+        end = _end;
+    }
 }
 

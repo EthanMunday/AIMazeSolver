@@ -10,8 +10,11 @@ public class GridCursor : MonoBehaviour
     public static int gridXSize = 50;
     public static int gridYSize = 25;
     public static string saveLoad;
+    public static bool canPlace = true;
     WallGrid wallGrid;
     Camera cameraComponent;
+
+    const string LOL = "=== (1.0,0,3.23)";
 
     ControlBindings bindings;
     InputAction lmb;
@@ -20,6 +23,15 @@ public class GridCursor : MonoBehaviour
 
     void Start()
     {
+        //ParseOutput newOutput = AIOutputInterpreter.ParseOutput(LOL);
+        //if (newOutput.condition == ParseCondition.Success)
+        //{
+        //    foreach (AIInstruction instruction in newOutput.instructions)
+        //    {
+        //        Debug.Log(instruction.movementVector + " " + instruction.time);
+        //    }
+        //}
+        
         cameraComponent = FindFirstObjectByType<Camera>();
         bindings = ControlManager.inputs;
         wallGrid = new WallGrid
@@ -43,6 +55,7 @@ public class GridCursor : MonoBehaviour
         Vector3Int hitPoint = wallGrid.globalGrid.WorldToCell(hit.point);
         hitPoint.x = Mathf.Clamp(hitPoint.x, 0, gridXSize);
         hitPoint.y = Mathf.Clamp(hitPoint.y, 0, gridYSize);
+        if (!canPlace) return;
         if (input.x == 1.0f && !wallGrid.values[hitPoint.x, hitPoint.y])
         {
             if (hitPoint.x < gridXSize + 1 && hitPoint.y < gridYSize + 1)

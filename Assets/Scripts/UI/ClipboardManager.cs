@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class ClipboardManager : MonoBehaviour
 {
-    const string GPT_PROMPT_COPY = "dawdadwad";
+    const string GPT_PROMPT_COPY = "Hello, ChatGPT, please do this thing";
     public void CopyToClipboard()
     {
         GUIUtility.systemCopyBuffer = GPT_PROMPT_COPY;

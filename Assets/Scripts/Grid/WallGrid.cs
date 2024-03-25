@@ -13,7 +13,7 @@ public class WallGrid
     GameObject gridObject;
     List<GameObject> wallObjList;
     List<WallData> wallDataList;
-    static List<AIWallData> wallDataListAI = new List<AIWallData>();
+    public static List<AIWallData> wallDataListAI = new List<AIWallData>();
 
     public void SetGrid(bool[,] _values)
     {

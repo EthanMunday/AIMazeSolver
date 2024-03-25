@@ -63,12 +63,11 @@ public class AIPlayerController : MonoBehaviour
         {
             if (currentInstructionIndex == instructions.Count) return;
             currentInstruction = instructions[currentInstructionIndex];
-            currentMovement = currentInstruction.movementVector.normalized;
-            currentTime = instructions[currentInstructionIndex].time;
+            currentMovement = currentInstruction.movementVector;
+            currentTime = instructions[currentInstructionIndex].time / 2;
         }
-        Debug.Log(currentMovement.x + " " + currentMovement.y);
         Vector3 positionOffset = new Vector3(currentMovement.x, currentMovement.y);
-        transform.position += positionOffset * Time.deltaTime;
+        transform.position += positionOffset * 2 * Time.deltaTime;
 
         Vector3 targetPosition = AITarget.inst.transform.position;
         if ((transform.position - targetPosition).magnitude < 1.0f)
@@ -114,8 +113,24 @@ public class AIPlayerController : MonoBehaviour
         AIResultOutputer.SaveResults();
         transform.position = startPosition;
         instructions.Clear();
+        allOutputs.Clear();
     }
 
+    public string GeneratePromptText()
+    {
+        string rv = "";
+
+        rv += "Navigate the obstacles to reach the goal.\n";
+        rv += "Player Position: " + transform.position.ToString() + "\n";
+        rv += "Target Position: " + AITarget.inst.transform.position.ToString() + "\n";
+        int wallIndex = 1;
+        foreach (AIWallData data in WallGrid.wallDataListAI)
+        {
+            rv += "Wall " + wallIndex.ToString() + " going from " + data.start.ToString() + " to " + data.end.ToString() + "\n";
+            wallIndex++;
+        }
+        return rv;
+    }
 
     private void OnMouseDown()
     {

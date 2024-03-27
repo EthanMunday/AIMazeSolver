@@ -14,7 +14,7 @@ public class AutoGPTButton : MonoBehaviour
     int moveLimit = 0;
     int maxMoveLimit = 10;
     int runLimit = 0;
-    int maxRunLimit = 100;
+    int maxRunLimit = 50;
 
     private void Start()
     {
@@ -65,7 +65,7 @@ public class AutoGPTButton : MonoBehaviour
     {
         var messages = new List<Message>
         {
-            new Message(Role.System, "1) You are a video game AI controller, navingating a 2D plane, to reach a goal position. \n 2) You will be given your position, the goals position and the positions of a walls start and ends and will calculate the path to the target. \n 3) Going through walls is impossible so use intersection maths to plan your route around the walls to reach the goal. \n 4) After explaining your proccess, you must write '===' to start inputing followed by a list of Vector3's where x and y is the speed in units per second you want to travel and z is the duration in seconds you wish to move for. \n 5) You can only perform up to 5 inputs per message"),
+            new Message(Role.System, "1) You are a video game AI controller, navingating a 2D plane, to reach a goal position. \n 2) You will be given your position, the goals position and the positions of any existing walls start and ends and will use vector maths to calculate the path to the target. \n 3) Going through walls is impossible so use intersection maths to plan your route around the walls to reach the goal. \n 4) After explaining your proccess, you must write '===' to start inputing followed by a list of Vector3's where x and y is the speed in units per second you want to travel and z is the duration in seconds you wish to move for. \n 5) You can only perform up to 5 inputs per message"),
             new Message(Role.User, "As a test, move up for 5 seconds, then diagonally down-right for 2.3 seconds, then left and slightly up for 3.1 seconds"),
             new Message(Role.Assistant, "[Thinking] The up direction is positive Y and right direction is positive X, so I should go in the direction (0.0, 1.0) for 5 seconds for the first command, then (1.0, -1.0) for 2.3 seconds for the second command, then (-1.0, 0.3) for 3.1 seconds for the third command \n === \n (0.0, 1.0, 5.0) \n (1.0, -1.0, 2.3) \n (-1.0, 0.3, 3.1)"),
             new Message(Role.User, AIPlayerController.inst.GeneratePromptText()),
@@ -83,7 +83,6 @@ public class AutoGPTButton : MonoBehaviour
 
     void Moving()
     {
-        Debug.Log("yeet");
         ParseOutput newParse = AIOutputInterpreter.ParseOutput(data);
         AIPlayerController.inst.RunInstructions(newParse);
         moveLimit++;
@@ -101,6 +100,12 @@ public class AutoGPTButton : MonoBehaviour
     {
         if (!AIPlayerController.inst.isRunning)
         {
+            runLimit++;
+            if (runLimit <= maxRunLimit)
+            {
+                status = AutoGPTStatus.Starting;
+                return;
+            }
             status = AutoGPTStatus.Default;
             return;
         }
@@ -111,6 +116,12 @@ public class AutoGPTButton : MonoBehaviour
             if (moveLimit >= maxMoveLimit)
             {
                 AIPlayerController.inst.StopRunning();
+                runLimit++;
+                if (runLimit <= maxRunLimit)
+                {
+                    status = AutoGPTStatus.Starting;
+                    return;
+                }
                 status = AutoGPTStatus.Default;
                 return;
             }

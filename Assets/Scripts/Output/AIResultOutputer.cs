@@ -48,8 +48,6 @@ public static class AIResultOutputer
             File.AppendAllText(filePath, "Faliure\n\n");
         }
 
-        File.AppendAllText(filePath, "Instructions:\n\n");
-
         List<ParseOutput> instructionsRan = AIPlayerController.inst.allOutputs;
         int outputIndex = 1;
         int successfulInstructions = 0;
@@ -57,9 +55,13 @@ public static class AIResultOutputer
         
         foreach(ParseOutput instr in instructionsRan)
         {
-            File.AppendAllText(filePath, "Instruction " + outputIndex.ToString() + ":\n");
+            File.AppendAllText(filePath, "Instruction " + outputIndex.ToString() + ":\n\n");
             outputIndex++;
 
+            File.AppendAllText(filePath, "Text:\n");
+            File.AppendAllText(filePath, instr.output + "\n\n");
+
+            File.AppendAllText(filePath, "Inputs:\n");
             if (instr.condition != ParseCondition.Success)
             {
                 File.AppendAllText(filePath, "Failed\n\n");

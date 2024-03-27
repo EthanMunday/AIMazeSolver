@@ -20,7 +20,7 @@ public static class AIOutputInterpreter
         List<AIInstruction> rv = new List<AIInstruction>();
         int currentIndex = input.IndexOf(INITIALISE_INPUT_STRING);
         int safety = 0;
-        if (currentIndex == -1) return new ParseOutput(rv, ParseCondition.LocateInputError);
+        if (currentIndex == -1) return new ParseOutput(rv, ParseCondition.LocateInputError, input);
         while (currentIndex < input.Length && currentIndex != -1 && safety < 100000)
         {
             safety++;
@@ -30,9 +30,9 @@ public static class AIOutputInterpreter
             if (newInput.time == 0.0f) continue;
             rv.Add(newInput);
         }
-        if (safety == 100000) return new ParseOutput(rv, ParseCondition.InputFormattingError);
-        if (rv.Count == 0) return new ParseOutput(rv, ParseCondition.NoInputsFound);
-        return new ParseOutput(rv, ParseCondition.Success);
+        if (safety == 100000) return new ParseOutput(rv, ParseCondition.InputFormattingError, input);
+        if (rv.Count == 0) return new ParseOutput(rv, ParseCondition.NoInputsFound, input);
+        return new ParseOutput(rv, ParseCondition.Success, input);
         
     }
 
@@ -87,11 +87,13 @@ public static class AIOutputInterpreter
 public struct ParseOutput
 {
     public List<AIInstruction> instructions;
+    public string output;
     public ParseCondition condition;
-    public ParseOutput(List<AIInstruction> _instructions, ParseCondition _condition)
+    public ParseOutput(List<AIInstruction> _instructions, ParseCondition _condition, string _output)
     {
         instructions = _instructions;
         condition = _condition;
+        output = _output;
     }
 }
 
